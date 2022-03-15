@@ -2,52 +2,39 @@
 # See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
-commands:
-  pipeline_id:
-    description: "A very simple command for demonstration purposes"
-    steps:
-      - run: echo ${CIRCLE_WORKFLOW_ID}
-      - run:
-          command: echo yikes
-          when: on_fail
-
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  save_hello_world_output:
+  build:
     docker:
       - image: circleci/node:13.8.0
     steps:
-      - run:
-          name: "saving hello file"
-          command: echo "Hello world" > ~/output.txt
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - output.txt
-  print_output_file:
+      - checkout
+      - run: npm i
+      - run: npm run lint
+  test:
     docker:
       - image: circleci/node:13.8.0
     steps:
-      - attach_workspace:
-          at: ~/
-      - run: cat ~/output.txt
-
-  print_pipeline_id:
+      - checkout
+      - run: npm i
+      - run: npm run test
+  analyze:
     docker:
       - image: circleci/node:13.8.0
     steps:
-      - pipeline_id
+      - checkout
+      - run: npm audit
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  my_workflow:
+  my_flow:
     jobs:
-      - save_hello_world_output
-      - print_output_file:
+      - build
+      - test:
           requires:
-            - save_hello_world_output
-      - print_pipeline_id:
+            - build
+      - analyze:
           requires:
-            - print_output_file
+            - test
